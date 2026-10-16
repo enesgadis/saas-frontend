@@ -2,6 +2,8 @@ export interface Ticket {
   id: number;
   title: string;
   description: string;
+  customer_name?: string | null;
+  customer_email?: string | null;
   status: "open" | "in_progress" | "closed";
   ai_draft_reply: string | null;
   ai_suggested_action: string | null;

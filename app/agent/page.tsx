@@ -6,6 +6,12 @@ import { Ticket } from "@/types/ticket";
 import { getTickets, updateTicket } from "@/lib/api";
 
 export default function AgentDashboard() {
+  // Temsilci Kimlik Doğrulama / Oturum Durumu
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [agentEmail, setAgentEmail] = useState<string>("enes.gadis@omniresolve.com");
+  const [agentPassword, setAgentPassword] = useState<string>("••••••••");
+
+  // Bilet State'leri
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [draftReply, setDraftReply] = useState<string>("");
@@ -14,6 +20,26 @@ export default function AgentDashboard() {
   const [feedback, setFeedback] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  // Oturum Kontrolü
+  useEffect(() => {
+    const savedAuth = localStorage.getItem("omni_agent_auth");
+    if (savedAuth === "true") {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const handleLogin = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsAuthenticated(true);
+    localStorage.setItem("omni_agent_auth", "true");
+    loadTickets();
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem("omni_agent_auth");
+  };
 
   const loadTickets = async () => {
     try {
@@ -24,15 +50,17 @@ export default function AgentDashboard() {
         selectTicket(data[0]);
       }
     } catch {
-      setFeedback("API bağlantı hatası. Backend sunucusunun ayakta olduğunu kontrol edin.");
+      setFeedback("API bağlantı hatası. Backend servisinin aktif olduğunu doğrulayınız.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadTickets();
-  }, []);
+    if (isAuthenticated) {
+      loadTickets();
+    }
+  }, [isAuthenticated]);
 
   const selectTicket = (ticket: Ticket) => {
     setSelectedTicket(ticket);
@@ -50,15 +78,16 @@ export default function AgentDashboard() {
       });
       setSelectedTicket(updated);
       setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-      setFeedback("Değişiklikler başarıyla kaydedildi.");
+      setFeedback("Talep başarıyla güncellendi.");
     } catch {
-      setFeedback("Güncelleme başarısız.");
+      setFeedback("Güncelleme işlemi başarısız oldu.");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleConfirmAction = async () => {
+  // Kurumsal Aksiyon Onaylama
+  const handleExecuteAction = async () => {
     if (!selectedTicket) return;
     try {
       setSaving(true);
@@ -68,28 +97,30 @@ export default function AgentDashboard() {
       });
       setSelectedTicket(updated);
       setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-      setFeedback(`✓ Usable Pass Onaylandı: Aksiyon işlendi ve bilet çözümlenerek kapatıldı.`);
+      setFeedback(`✓ Operasyonel aksiyon onaylandı, müşteriye yanıt iletildi ve talep çözümlendi.`);
     } catch {
-      setFeedback("Aksiyon onaylanırken hata oluştu.");
+      setFeedback("Aksiyon yürütülürken hata meydana geldi.");
     } finally {
       setSaving(false);
     }
   };
 
-  // İkincil etiketleme (Kategori & Öncelik Algılama)
+  // Kategori & Öncelik Algılama
   const getTicketMeta = (t: Ticket) => {
     const text = `${t.title} ${t.description}`.toLowerCase();
     let category = { label: "Genel Destek", icon: "💬", color: "text-slate-400 bg-slate-800/40 border-slate-700/50" };
     let priority = { label: "Normal", color: "text-blue-400 bg-blue-950/40 border-blue-800/40" };
 
-    if (text.includes("iade") || text.includes("arıza") || text.includes("bozuk") || text.includes("para")) {
+    if (text.includes("iade") || text.includes("arıza") || text.includes("bozuk") || text.includes("para") || text.includes("hasarlı")) {
       category = { label: "İade & Değişim", icon: "💳", color: "text-amber-400 bg-amber-950/40 border-amber-800/40" };
       priority = { label: "Yüksek", color: "text-orange-400 bg-orange-950/40 border-orange-800/40" };
-    } else if (text.includes("kargo") || text.includes("teslim") || text.includes("gecik") || text.includes("nerede")) {
-      category = { label: "Lojistik & Kargo", icon: "📦", color: "text-cyan-400 bg-cyan-950/40 border-cyan-800/40" };
+    } else if (text.includes("kargo") || text.includes("teslim") || text.includes("gecik") || text.includes("nerede") || text.includes("sevkiyat")) {
+      category = { label: "Lojistik & Teslimat", icon: "📦", color: "text-cyan-400 bg-cyan-950/40 border-cyan-800/40" };
       priority = { label: "Acil", color: "text-red-400 bg-red-950/40 border-red-800/40" };
-    } else if (text.includes("şifre") || text.includes("giriş") || text.includes("hesap")) {
+    } else if (text.includes("şifre") || text.includes("giriş") || text.includes("hesap") || text.includes("erişim")) {
       category = { label: "Güvenlik & Hesap", icon: "🔑", color: "text-purple-400 bg-purple-950/40 border-purple-800/40" };
+    } else if (text.includes("fatura") || text.includes("tahsilat") || text.includes("ödeme") || text.includes("çekim")) {
+      category = { label: "Fatura & Muhasebe", icon: "🧾", color: "text-emerald-400 bg-emerald-950/40 border-emerald-800/40" };
     }
 
     return { category, priority };
@@ -97,15 +128,16 @@ export default function AgentDashboard() {
 
   const filteredTickets = useMemo(() => {
     return tickets.filter((t) => {
+      const customerInfo = `${t.customer_name || ""} ${t.customer_email || ""}`.toLowerCase();
       const matchesSearch =
         t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        t.description.toLowerCase().includes(searchQuery.toLowerCase());
+        t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        customerInfo.includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === "all" || t.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [tickets, searchQuery, statusFilter]);
 
-  // Metrik Hesaplamaları
   const stats = useMemo(() => {
     const total = tickets.length;
     const open = tickets.filter((t) => t.status === "open").length;
@@ -126,81 +158,144 @@ export default function AgentDashboard() {
     }
   };
 
+  // 1. EKRAN: TEMSİLCİ KURUMSAL GİRİŞ EKRANI (AUTH GATE)
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center items-center p-6 font-sans">
+        <div className="max-w-md w-full bg-slate-900/80 border border-slate-800 rounded-2xl p-8 shadow-2xl backdrop-blur-md">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center font-bold text-lg text-white shadow-lg shadow-blue-900/40">
+              Ω
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-white tracking-tight">OmniResolve Destek Masası</h1>
+              <p className="text-xs text-slate-400">Yetkili Destek Uzmanı Girişi</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                Kurumsal E-posta
+              </label>
+              <input
+                type="email"
+                required
+                value={agentEmail}
+                onChange={(e) => setAgentEmail(e.target.value)}
+                placeholder="ad.soyad@omniresolve.com"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                Şifre
+              </label>
+              <input
+                type="password"
+                required
+                value={agentPassword}
+                onChange={(e) => setAgentPassword(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition shadow-lg shadow-blue-900/30"
+            >
+              Destek Masasına Giriş Yap
+            </button>
+          </form>
+
+          <div className="mt-6 pt-6 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+            <span>Kurumsal SSO Aktif</span>
+            <Link href="/" className="text-blue-400 hover:underline">
+              ← Müşteri Portalına Dön
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. EKRAN: TEMSİLCİ ÇALIŞMA ALANI (AGENT WORKSPACE)
   return (
     <div className="flex h-screen w-full bg-slate-950 text-slate-100 overflow-hidden font-sans">
-      {/* Sol Kenar Çubuğu: Gelen Kutusu & Filtreler */}
+      {/* Sol Panel: Bilet Sırası ve Filtreler */}
       <aside className="w-80 md:w-[420px] border-r border-slate-800 flex flex-col bg-slate-900/40 backdrop-blur-md">
-        {/* Üst Logo & Navigasyon */}
+        {/* Header */}
         <div className="p-4 border-b border-slate-800">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-2.5">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-purple-600 to-blue-500 flex items-center justify-center font-bold text-xs shadow-md shadow-purple-900/40">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center font-bold text-xs text-white shadow-md">
                 Ω
               </div>
               <div>
-                <h1 className="font-bold text-sm tracking-tight text-white">OmniResolve Agent</h1>
-                <p className="text-[10px] text-slate-400">Fortune 500 Support Tier</p>
+                <h1 className="font-bold text-sm tracking-tight text-white">OmniResolve Desk</h1>
+                <p className="text-[10px] text-slate-400">Kurumsal Destek Operasyonları</p>
               </div>
             </div>
-            <div className="flex items-center space-x-1.5">
+            <div className="flex items-center space-x-2">
               <button
                 onClick={loadTickets}
-                className="text-xs px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
-                title="Listeyi Yenile"
+                className="text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+                title="Yenile"
               >
                 ⟳
               </button>
-              <Link
-                href="/"
-                className="text-xs px-2.5 py-1 rounded-lg bg-blue-600/20 text-blue-300 border border-blue-500/30 hover:bg-blue-600/30 transition flex items-center space-x-1"
-                title="Müşteri Portalı"
+              <button
+                onClick={handleLogout}
+                className="text-[11px] px-2 py-1 rounded bg-slate-800/80 hover:bg-red-950/60 text-slate-400 hover:text-red-300 border border-slate-700 transition"
+                title="Çıkış Yap"
               >
-                <span>+ Yeni</span>
-              </Link>
+                Çıkış
+              </button>
             </div>
           </div>
 
-          {/* İstatistik Özet Şeridi */}
-          <div className="grid grid-cols-3 gap-2 py-2 px-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 text-center mb-3">
+          {/* İstatistik Göstergesi */}
+          <div className="grid grid-cols-3 gap-2 py-2 px-2.5 rounded-xl bg-slate-950/70 border border-slate-800/80 text-center mb-3">
             <div>
-              <span className="block text-[10px] text-slate-500 uppercase font-semibold">Toplam</span>
+              <span className="block text-[10px] text-slate-500 uppercase font-semibold">Talepler</span>
               <span className="text-sm font-bold text-slate-200">{stats.total}</span>
             </div>
             <div>
-              <span className="block text-[10px] text-emerald-400 uppercase font-semibold">Açık</span>
+              <span className="block text-[10px] text-emerald-400 uppercase font-semibold">Bekleyen</span>
               <span className="text-sm font-bold text-emerald-400">{stats.open}</span>
             </div>
             <div>
-              <span className="block text-[10px] text-purple-400 uppercase font-semibold">Çözülen</span>
-              <span className="text-sm font-bold text-purple-400">{stats.closed}</span>
+              <span className="block text-[10px] text-blue-400 uppercase font-semibold">Çözümlenen</span>
+              <span className="text-sm font-bold text-blue-400">{stats.closed}</span>
             </div>
           </div>
 
-          {/* Arama Kutusu */}
+          {/* Arama */}
           <div className="relative mb-2">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Biletlerde ara (başlık, mesaj)..."
-              className="w-full bg-slate-950/80 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-purple-500 transition"
+              placeholder="Müşteri adı, konu veya mesajda ara..."
+              className="w-full bg-slate-950/90 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
             />
           </div>
 
-          {/* Durum Filtre Sekmeleri */}
+          {/* Filtre Sekmeleri */}
           <div className="flex space-x-1 text-[11px]">
             {[
               { id: "all", label: "Tümü" },
               { id: "open", label: "Açık" },
               { id: "in_progress", label: "İşlemde" },
-              { id: "closed", label: "Çözüldü" },
+              { id: "closed", label: "Kapatıldı" },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setStatusFilter(tab.id)}
                 className={`flex-1 py-1 rounded-md transition text-center font-medium ${
                   statusFilter === tab.id
-                    ? "bg-purple-600/30 text-purple-300 border border-purple-500/40"
+                    ? "bg-blue-600/30 text-blue-300 border border-blue-500/40"
                     : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/40"
                 }`}
               >
@@ -213,26 +308,28 @@ export default function AgentDashboard() {
         {/* Bilet Listesi */}
         <div className="flex-1 overflow-y-auto divide-y divide-slate-800/50">
           {loading ? (
-            <div className="p-8 text-xs text-center text-slate-500 animate-pulse">Biletler alınıyor...</div>
+            <div className="p-8 text-xs text-center text-slate-500 animate-pulse">Talepler yükleniyor...</div>
           ) : filteredTickets.length === 0 ? (
-            <div className="p-8 text-xs text-center text-slate-500">Kriterlere uygun bilet bulunamadı.</div>
+            <div className="p-8 text-xs text-center text-slate-500">Seçilen kriterde talep bulunmuyor.</div>
           ) : (
             filteredTickets.map((t) => {
               const active = selectedTicket?.id === t.id;
               const meta = getTicketMeta(t);
+              const displayName = t.customer_name || "Kurumsal Müşteri";
+
               return (
                 <div
                   key={t.id}
                   onClick={() => selectTicket(t)}
                   className={`p-3.5 cursor-pointer transition relative ${
                     active
-                      ? "bg-purple-950/40 border-l-4 border-purple-500"
+                      ? "bg-blue-950/40 border-l-4 border-blue-500"
                       : "hover:bg-slate-800/30"
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center space-x-1.5">
-                      <span className="text-[11px] font-mono text-slate-500">#{t.id}</span>
+                      <span className="text-[11px] font-mono text-slate-400 font-semibold">#{t.id}</span>
                       <span className={`text-[10px] px-1.5 py-0.2 rounded border font-medium ${meta.priority.color}`}>
                         {meta.priority.label}
                       </span>
@@ -245,11 +342,15 @@ export default function AgentDashboard() {
                     </span>
                   </div>
 
+                  <div className="text-[11px] text-blue-300/90 font-medium mb-0.5 flex items-center space-x-1">
+                    <span>👤 {displayName}</span>
+                  </div>
+
                   <h3 className="text-xs font-semibold text-slate-100 line-clamp-1">{t.title}</h3>
                   <p className="text-[11px] text-slate-400 line-clamp-2 mt-1 leading-relaxed">{t.description}</p>
 
                   {t.ai_suggested_action && (
-                    <div className="mt-2 flex items-center space-x-1 text-[10px] text-purple-300 bg-purple-950/60 border border-purple-800/40 px-2 py-1 rounded-md font-mono">
+                    <div className="mt-2 flex items-center space-x-1 text-[10px] text-indigo-300 bg-indigo-950/60 border border-indigo-800/40 px-2 py-1 rounded-md font-mono">
                       <span>⚡</span>
                       <span className="truncate">{t.ai_suggested_action}</span>
                     </div>
@@ -261,11 +362,11 @@ export default function AgentDashboard() {
         </div>
       </aside>
 
-      {/* Sağ Ana Bölüm: Bilet Detayı & AI-Native Usable Pass */}
+      {/* Sağ Ana Panel: Talep İnceleme ve Akıllı Çözüm */}
       <main className="flex-1 flex flex-col bg-slate-950 overflow-y-auto p-6 lg:p-8">
         {selectedTicket ? (
           <div className="max-w-4xl w-full mx-auto space-y-6">
-            {/* Başlık ve Durum Aksiyon Butonları */}
+            {/* Üst Bilgi Barı */}
             <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-800">
               <div>
                 <div className="flex items-center space-x-3 mb-1">
@@ -275,7 +376,7 @@ export default function AgentDashboard() {
                   </span>
                 </div>
                 <div className="flex items-center space-x-3 text-xs text-slate-500">
-                  <span>Bilet ID: #{selectedTicket.id}</span>
+                  <span>Talep No: #{selectedTicket.id}</span>
                   <span>•</span>
                   <span>Kayıt Tarihi: {new Date(selectedTicket.created_at).toLocaleString("tr-TR")}</span>
                 </div>
@@ -310,7 +411,7 @@ export default function AgentDashboard() {
                   onClick={() => handleUpdate("closed")}
                   className={`text-xs px-3 py-1.5 rounded-lg border transition ${
                     selectedTicket.status === "closed"
-                      ? "bg-purple-950/60 border-purple-500/50 text-purple-300"
+                      ? "bg-blue-950/60 border-blue-500/50 text-blue-300"
                       : "bg-slate-800 hover:bg-slate-700 text-slate-400 border-slate-700"
                   }`}
                 >
@@ -319,47 +420,65 @@ export default function AgentDashboard() {
               </div>
             </div>
 
-            {/* Müşteri Orijinal Mesajı */}
+            {/* Müşteri Kimlik ve İletişim Kartı */}
             <section className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs uppercase tracking-wider text-slate-400 font-semibold flex items-center space-x-2">
-                  <span>👤 Müşteri Talebi</span>
-                </h4>
-                <span className="text-[11px] text-slate-500 font-mono">Inbound Message</span>
-              </div>
-              <p className="text-sm text-slate-200 whitespace-pre-wrap leading-relaxed">
-                {selectedTicket.description}
-              </p>
-            </section>
-
-            {/* AI-NATIVE KATMAN: USABLE PASS (KULLANILABİLİR PAS) */}
-            <section className="bg-gradient-to-br from-purple-950/40 via-slate-900/90 to-purple-900/20 border-2 border-purple-500/40 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-2.5">
-                  <span className="flex h-3 w-3 relative">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
-                  </span>
+              <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-800/70">
+                <div className="flex items-center space-x-3">
+                  <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-sm text-slate-200">
+                    {(selectedTicket.customer_name || "M").charAt(0).toUpperCase()}
+                  </div>
                   <div>
-                    <h3 className="text-base font-bold text-white tracking-wide">
-                      🤖 AI-Native Katman: Kullanılabilir Pas (Usable Pass)
-                    </h3>
-                    <p className="text-[11px] text-purple-300/80">
-                      Ajan bir sonraki adımı öngördü, operasyonel aksiyonu ve yanıtı hazırladı.
-                    </p>
+                    <h4 className="text-sm font-semibold text-slate-200">
+                      {selectedTicket.customer_name || "Kayıtlı Kurumsal Müşteri"}
+                    </h4>
+                    <span className="text-xs text-slate-400 font-mono">
+                      {selectedTicket.customer_email || "iletisim@musteri.com"}
+                    </span>
                   </div>
                 </div>
-                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-purple-900/50 text-purple-300 border border-purple-700/50">
-                  Zero-Friction
+                <span className="text-[11px] font-mono px-2.5 py-1 rounded bg-slate-800/80 text-slate-300 border border-slate-700">
+                  Doğrulanmış İletişim
                 </span>
               </div>
 
-              {/* Önerilen Aksiyon Rozeti */}
-              {selectedTicket.ai_suggested_action && (
-                <div className="mb-4 p-3.5 rounded-xl bg-purple-950/80 border border-purple-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h5 className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold mb-2">
+                  Müşteri Mesajı / Şikayet Detayı
+                </h5>
+                <p className="text-sm text-slate-200 whitespace-pre-wrap leading-relaxed">
+                  {selectedTicket.description}
+                </p>
+              </div>
+            </section>
+
+            {/* AI-NATIVE OPERASYONEL ASİSTAN (KURUMSAL USABLE PASS) */}
+            <section className="bg-gradient-to-br from-indigo-950/40 via-slate-900/90 to-blue-950/30 border-2 border-indigo-500/40 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2.5">
+                  <span className="flex h-3 w-3 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+                  </span>
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-purple-400 tracking-wider block">
-                      Öngörülen Sistem Aksiyonu:
+                    <h3 className="text-base font-bold text-white tracking-wide">
+                      🤖 OmniResolve Akıllı Karar & Çözüm Asistanı
+                    </h3>
+                    <p className="text-[11px] text-indigo-300/80">
+                      Sistem bilet içeriğini analiz ederek operasyonel aksiyonu ve yanıt taslağını otomatik olarak hazırlamıştır.
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-indigo-900/50 text-indigo-300 border border-indigo-700/50">
+                  Operasyonel Otomasyon
+                </span>
+              </div>
+
+              {/* Önerilen Operasyonel Aksiyon */}
+              {selectedTicket.ai_suggested_action && (
+                <div className="mb-4 p-4 rounded-xl bg-indigo-950/80 border border-indigo-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-indigo-300 tracking-wider block mb-0.5">
+                      Önerilen Operasyonel Aksiyon:
                     </span>
                     <span className="text-sm font-semibold text-white">
                       ⚡ {selectedTicket.ai_suggested_action}
@@ -369,19 +488,19 @@ export default function AgentDashboard() {
                   <button
                     type="button"
                     disabled={saving}
-                    onClick={handleConfirmAction}
-                    className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 active:scale-95 text-white font-bold text-xs shadow-lg shadow-purple-900/60 transition transform disabled:opacity-50"
+                    onClick={handleExecuteAction}
+                    className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white font-bold text-xs shadow-lg shadow-indigo-900/60 transition transform disabled:opacity-50"
                   >
-                    {saving ? "İşleniyor..." : "⚡ Pası Gole Çevir (Onayla & Kapat)"}
+                    {saving ? "İşleniyor..." : "Aksiyonu Yürüt & Talebi Çözümle"}
                   </button>
                 </div>
               )}
 
-              {/* Düzenlenebilir Yanıt Taslağı */}
+              {/* Müşteriye İletilecek Çözüm Yanıtı */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label htmlFor="ai_draft_reply" className="text-xs font-semibold text-slate-300">
-                    Müşteriye İletilecek Yanıt Taslağı (Doğrudan Düzenlenebilir)
+                    Müşteriye İletilecek Çözüm Yanıtı (Düzenlenebilir)
                   </label>
                   <span className="text-[11px] text-slate-400 font-mono">
                     {draftReply.length} karakter
@@ -392,19 +511,19 @@ export default function AgentDashboard() {
                   rows={5}
                   value={draftReply}
                   onChange={(e) => setDraftReply(e.target.value)}
-                  placeholder="AI yanıt taslağı bekleniyor..."
-                  className="w-full bg-slate-950/90 border border-purple-500/30 rounded-xl p-4 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-400 transition resize-y leading-relaxed"
+                  placeholder="Çözüm yanıtı hazırlanıyor..."
+                  className="w-full bg-slate-950/90 border border-indigo-500/30 rounded-xl p-4 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-y leading-relaxed"
                 />
               </div>
 
-              {/* Alt Butonlar ve Geri Bildirim */}
+              {/* Alt Butonlar */}
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center space-x-2">
                   <button
                     type="button"
                     onClick={() => {
                       navigator.clipboard.writeText(draftReply);
-                      setFeedback("Taslak panoya kopyalandı!");
+                      setFeedback("Yanıt taslağı panoya kopyalandı.");
                     }}
                     className="text-xs px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
                   >
@@ -416,12 +535,12 @@ export default function AgentDashboard() {
                     onClick={() => handleUpdate()}
                     className="text-xs px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-100 font-medium disabled:opacity-50 transition"
                   >
-                    {saving ? "Kaydediliyor..." : "Taslağı Kaydet"}
+                    {saving ? "Kaydediliyor..." : "Taslağı Güncelle"}
                   </button>
                 </div>
 
                 <div className="text-xs text-slate-400">
-                  Ortalama Süre Tasarrufu: <span className="font-semibold text-emerald-400">%94</span>
+                  Tahmini Süre Tasarrufu: <span className="font-semibold text-emerald-400">%94</span> (15 dk ➔ 5 sn)
                 </div>
               </div>
 
@@ -436,7 +555,7 @@ export default function AgentDashboard() {
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-slate-500">
             <div className="text-3xl mb-2">📋</div>
-            <p className="text-sm">İncelemek ve aksiyon almak için sol menüden bir bilet seçin.</p>
+            <p className="text-sm">İncelemek ve aksiyon almak için sol listeden bir talep seçiniz.</p>
           </div>
         )}
       </main>

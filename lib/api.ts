@@ -8,7 +8,12 @@ export async function getTickets(): Promise<Ticket[]> {
   return res.json();
 }
 
-export async function createTicket(payload: { title: string; description: string }): Promise<Ticket> {
+export async function createTicket(payload: {
+  title: string;
+  description: string;
+  customer_name?: string;
+  customer_email?: string;
+}): Promise<Ticket> {
   const res = await fetch(`${API_BASE_URL}/tickets`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
