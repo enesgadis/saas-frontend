@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { Ticket } from "@/types/ticket";
-import { getTickets, updateTicket } from "@/lib/api";
+import { getTickets, updateTicket, analyzeTicket } from "@/lib/api";
 
 export default function AgentDashboard() {
   // Temsilci Kimlik Doğrulama / Oturum Durumu
@@ -17,6 +17,7 @@ export default function AgentDashboard() {
   const [draftReply, setDraftReply] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
+  const [analyzing, setAnalyzing] = useState<boolean>(false);
   const [feedback, setFeedback] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -104,6 +105,24 @@ export default function AgentDashboard() {
       setFeedback("Aksiyon yürütülürken hata meydana geldi.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Canlı Yapay Zekâ Analizini Tetikleme
+  const handleAnalyze = async () => {
+    if (!selectedTicket) return;
+    try {
+      setAnalyzing(true);
+      setFeedback("");
+      const updated = await analyzeTicket(selectedTicket.id);
+      setSelectedTicket(updated);
+      setDraftReply(updated.ai_draft_reply || "");
+      setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+      setFeedback("✓ Google Gemini 3.5 Flash talebi başarıyla analiz etti ve aksiyonu hazırladı.");
+    } catch {
+      setFeedback("Yapay zekâ analizi sırasında bağlantı hatası oluştu.");
+    } finally {
+      setAnalyzing(false);
     }
   };
 
@@ -487,9 +506,17 @@ export default function AgentDashboard() {
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                     <span>Canlı LLM: Google Gemini 3.5 Flash</span>
                   </span>
-                  <span className="text-[11px] font-mono px-2 py-1 rounded-md bg-indigo-900/50 text-indigo-300 border border-indigo-700/50 hidden sm:inline-block">
-                    ⚡ 640ms Çıkarım
-                  </span>
+                  {selectedTicket.ai_suggested_action && (
+                    <button
+                      type="button"
+                      disabled={analyzing}
+                      onClick={handleAnalyze}
+                      className="text-[11px] px-2.5 py-1 rounded-md bg-indigo-900/60 hover:bg-indigo-800 text-indigo-200 border border-indigo-700/60 transition flex items-center space-x-1"
+                      title="Google Gemini ile yeniden analiz et"
+                    >
+                      <span>{analyzing ? "🧠 Çözümleniyor..." : "🔄 Yeniden Analiz"}</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -497,57 +524,92 @@ export default function AgentDashboard() {
               <div className="mb-4 p-3 rounded-xl bg-slate-950/70 border border-indigo-500/30 flex flex-wrap items-center justify-between gap-2 text-xs">
                 <div className="flex items-center space-x-2 text-slate-300">
                   <span className="font-semibold text-indigo-300">🔍 Model Doğrulaması:</span>
-                  <span className="text-slate-400">Canlı API çağrısı ile kişiye özel sentezlendi (Sıfır Statik Şablon).</span>
+                  <span className="text-slate-400">Canlı API çağrısı ile talep anında sentezlenir (Sıfır Statik Şablon).</span>
                 </div>
                 <div className="flex items-center space-x-3 text-[11px] font-mono text-slate-400">
                   <span className="text-emerald-400">HTTP 200 OK</span>
                   <span>•</span>
-                  <span>JSON Schema Mode</span>
+                  <span>Google Generative Language API</span>
                 </div>
               </div>
 
-              {/* Önerilen Operasyonel Aksiyon */}
-              {selectedTicket.ai_suggested_action && (
-                <div className="mb-4 p-4 rounded-xl bg-indigo-950/80 border border-indigo-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-indigo-300 tracking-wider block mb-0.5">
-                      Önerilen Operasyonel Aksiyon:
-                    </span>
-                    <span className="text-sm font-semibold text-white">
-                      ⚡ {selectedTicket.ai_suggested_action}
-                    </span>
+              {/* EĞER HENÜZ AI ANALİZİ YAPILMAMIŞSA (ON-DEMAND ANALİZ BUTONU) */}
+              {!selectedTicket.ai_suggested_action && !selectedTicket.ai_draft_reply ? (
+                <div className="py-8 px-6 text-center border border-indigo-500/30 rounded-2xl bg-slate-950/70 my-3">
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-950 border border-indigo-500/40 flex items-center justify-center text-2xl mx-auto mb-3 shadow-lg shadow-indigo-900/50">
+                    ✨
                   </div>
-
+                  <h4 className="text-base font-bold text-white mb-1">
+                    Talebi Yapay Zekâ ile İnceleyin
+                  </h4>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto mb-5 leading-relaxed">
+                    Google Gemini 3.5 Flash modeli müşteri talebini anında çözümleyecek, kurumsal operasyonel aksiyonu belirleyecek ve onayınıza sunulacak yanıtı hazırlayacaktır.
+                  </p>
                   <button
                     type="button"
-                    disabled={saving}
-                    onClick={handleExecuteAction}
-                    className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white font-bold text-xs shadow-lg shadow-indigo-900/60 transition transform disabled:opacity-50"
+                    disabled={analyzing}
+                    onClick={handleAnalyze}
+                    className="py-3 px-6 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 active:scale-95 text-white font-bold text-xs shadow-xl shadow-indigo-900/50 transition transform disabled:opacity-50 flex items-center space-x-2 mx-auto"
                   >
-                    {saving ? "İşleniyor..." : "Aksiyonu Yürüt & Talebi Çözümle"}
+                    {analyzing ? (
+                      <>
+                        <span className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full"></span>
+                        <span>Gemini 3.5 Flash Talebi Çözümlüyor...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>🧠</span>
+                        <span>Talebi Yapay Zekâ ile İncele & Çözüm Üret</span>
+                      </>
+                    )}
                   </button>
                 </div>
-              )}
+              ) : (
+                <>
+                  {/* Önerilen Operasyonel Aksiyon */}
+                  {selectedTicket.ai_suggested_action && (
+                    <div className="mb-4 p-4 rounded-xl bg-indigo-950/80 border border-indigo-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-indigo-300 tracking-wider block mb-0.5">
+                          Önerilen Operasyonel Aksiyon:
+                        </span>
+                        <span className="text-sm font-semibold text-white">
+                          ⚡ {selectedTicket.ai_suggested_action}
+                        </span>
+                      </div>
 
-              {/* Müşteriye İletilecek Çözüm Yanıtı */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label htmlFor="ai_draft_reply" className="text-xs font-semibold text-slate-300">
-                    Müşteriye İletilecek Çözüm Yanıtı (Düzenlenebilir)
-                  </label>
-                  <span className="text-[11px] text-slate-400 font-mono">
-                    {draftReply.length} karakter
-                  </span>
-                </div>
-                <textarea
-                  id="ai_draft_reply"
-                  rows={5}
-                  value={draftReply}
-                  onChange={(e) => setDraftReply(e.target.value)}
-                  placeholder="Çözüm yanıtı hazırlanıyor..."
-                  className="w-full bg-slate-950/90 border border-indigo-500/30 rounded-xl p-4 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-y leading-relaxed"
-                />
-              </div>
+                      <button
+                        type="button"
+                        disabled={saving}
+                        onClick={handleExecuteAction}
+                        className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-95 text-white font-bold text-xs shadow-lg shadow-indigo-900/60 transition transform disabled:opacity-50"
+                      >
+                        {saving ? "İşleniyor..." : "Aksiyonu Yürüt & Talebi Çözümle"}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Müşteriye İletilecek Çözüm Yanıtı */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label htmlFor="ai_draft_reply" className="text-xs font-semibold text-slate-300">
+                        Müşteriye İletilecek Çözüm Yanıtı (Düzenlenebilir)
+                      </label>
+                      <span className="text-[11px] text-slate-400 font-mono">
+                        {draftReply.length} karakter
+                      </span>
+                    </div>
+                    <textarea
+                      id="ai_draft_reply"
+                      rows={5}
+                      value={draftReply}
+                      onChange={(e) => setDraftReply(e.target.value)}
+                      placeholder="Çözüm yanıtı hazırlanıyor..."
+                      className="w-full bg-slate-950/90 border border-indigo-500/30 rounded-xl p-4 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-y leading-relaxed"
+                    />
+                  </div>
+                </>
+              )}
 
               {/* Alt Butonlar */}
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">

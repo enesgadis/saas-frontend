@@ -8,6 +8,12 @@ export async function getTickets(): Promise<Ticket[]> {
   return res.json();
 }
 
+export async function getTicket(id: number): Promise<Ticket> {
+  const res = await fetch(`${API_BASE_URL}/tickets/${id}`, { cache: "no-store" });
+  if (!res.ok) throw new Error("Bilet bulunamadi");
+  return res.json();
+}
+
 export async function createTicket(payload: {
   title: string;
   description: string;
@@ -20,6 +26,16 @@ export async function createTicket(payload: {
     body: JSON.stringify({ ticket: payload }),
   });
   if (!res.ok) throw new Error("Bilet olusturulamadi");
+  return res.json();
+}
+
+// Temsilci tarafından talep edilen canlı AI analizi
+export async function analyzeTicket(id: number): Promise<Ticket> {
+  const res = await fetch(`${API_BASE_URL}/tickets/${id}/analyze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) throw new Error("Yapay zeka analizi yapilamadi");
   return res.json();
 }
 
