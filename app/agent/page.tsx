@@ -20,6 +20,7 @@ export default function AgentDashboard() {
   const [feedback, setFeedback] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [showMobileDetail, setShowMobileDetail] = useState<boolean>(false);
 
   // Oturum Kontrolü
   useEffect(() => {
@@ -66,6 +67,7 @@ export default function AgentDashboard() {
     setSelectedTicket(ticket);
     setDraftReply(ticket.ai_draft_reply || "");
     setFeedback("");
+    setShowMobileDetail(true);
   };
 
   const handleUpdate = async (statusOverride?: Ticket["status"]) => {
@@ -224,7 +226,7 @@ export default function AgentDashboard() {
   return (
     <div className="flex h-screen w-full bg-slate-950 text-slate-100 overflow-hidden font-sans">
       {/* Sol Panel: Bilet Sırası ve Filtreler */}
-      <aside className="w-80 md:w-[420px] border-r border-slate-800 flex flex-col bg-slate-900/40 backdrop-blur-md">
+      <aside className={`w-full md:w-[420px] border-r border-slate-800 flex-col bg-slate-900/40 backdrop-blur-md ${showMobileDetail ? "hidden md:flex" : "flex"}`}>
         {/* Header */}
         <div className="p-4 border-b border-slate-800">
           <div className="flex items-center justify-between mb-3">
@@ -363,9 +365,21 @@ export default function AgentDashboard() {
       </aside>
 
       {/* Sağ Ana Panel: Talep İnceleme ve Akıllı Çözüm */}
-      <main className="flex-1 flex flex-col bg-slate-950 overflow-y-auto p-6 lg:p-8">
+      <main className={`flex-1 flex-col bg-slate-950 overflow-y-auto p-4 md:p-6 lg:p-8 ${showMobileDetail ? "flex" : "hidden md:flex"}`}>
         {selectedTicket ? (
-          <div className="max-w-4xl w-full mx-auto space-y-6">
+          <div className="max-w-4xl w-full mx-auto space-y-5">
+            {/* Mobilde Geri Dön Butonu */}
+            <div className="md:hidden pb-3 border-b border-slate-800 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setShowMobileDetail(false)}
+                className="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-blue-400 font-medium flex items-center space-x-1.5 transition"
+              >
+                <span>← Bilet Listesine Dön</span>
+              </button>
+              <span className="text-xs font-mono text-slate-400">Talep #{selectedTicket.id}</span>
+            </div>
+
             {/* Üst Bilgi Barı */}
             <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-800">
               <div>

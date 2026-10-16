@@ -1,0 +1,18 @@
+{
+  "name": "OmniResolve Destek Masası",
+  "short_name": "OmniResolve",
+  "description": "Autonomous AI-Native Customer Operations Platform",
+  "start_url": "/agent",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#2563eb",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
