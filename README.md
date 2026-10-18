@@ -37,17 +37,17 @@ OmniResolve, Zendesk'in yüzlerce karmaşık menüsü yerine destek operasyonlar
 
 1. **İş Akışı 1: Akıllı Talep Girişi (Customer Ingestion & Smart Triage)**
    - Müşteri, modern self-service portalından (`/`) destek biletini açar.
-   - Hızlı demo şablonları (Kargo, İade, Şifre, Fatura) veya serbest metin ile talep girilir.
-   - Talep girdiği an arka planda Rails API üzerinde çalışan dil modeli ve sınıflandırma motoru talebi anında analiz eder.
+   - Hızlı Uber demo şablonları (*Araçta Eşya Unutuldu, Fazla Ücret & Rota Uyuşmazlığı, Uber Eats Eksik Sipariş, Sürüş Emniyeti*) veya serbest metin ile talep girilir.
+   - Talep girdiği an arka planda Rails API üzerinde çalışan **Google Gemini 3.8 Flash** modeli talebi doğrudan kendi bağlamında analiz eder.
 
 2. **İş Akışı 2: Temsilci Önceliklendirme ve İnceleme (Agent Triage & Queue Management)**
-   - Temsilci gelen kutusunda (`/agent`) tüm biletler anlık olarak listelenir.
-   - Durum filtreleri (`Tümü`, `Açık`, `İşlemde`, `Çözüldü`), anlık arama motoru ve dinamik etiketler (Öncelik: *Acil/Yüksek/Normal*, Kategori: *Lojistik/İade/Güvenlik*) ile gelen talepler tek bakışta filtrelenir.
+   - Temsilci gelen kutusunda (`/agent`) tüm Uber biletleri anlık olarak listelenir.
+   - Durum filtreleri (`Tümü`, `Açık`, `İşleniyor`, `Kapatıldı`), anlık arama motoru ve dinamik etiketler (Öncelik: *Kritik/Acil/Yüksek/Normal*, Kategori: *Kayıp Eşya/Rota İtirazı/Emniyet/Eats*) ile gelen talepler tek bakışta filtrelenir.
 
 3. **İş Akışı 3: Otonom Çözüm & Tek Tıkla Aksiyon (Autonomous One-Click Resolution)**
-   - Temsilci talebi açtığında AI tarafından üretilmiş çözüm taslağını görür.
-   - Metin üzerinde isterse düzenleme yapar; öngörülen sistem aksiyonunu (`⚡ Aksiyonu Onayla: Pası Gole Çevir`) tek tıkla onaylar.
-   - Tek tıklamayla bilet durumu `closed` (çözüldü) yapılır, müşteriye iletilecek yanıt kaydedilir ve işlem süresi 15 dakikadan 3 saniyeye iner.
+   - Temsilci talebi açtığında AI tarafından üretilmiş empati içeren müşteri yanıtını, ilgili birime gidecek iç sevk notunu ve önerilen operasyonel aksiyonu görür.
+   - Metin üzerinde isterse düzenleme yapar; öngörülen sistem aksiyonunu (`Müşteriye Yanıtı Gönder & Kapat` veya `İlgili Birime Sevk Et`) tek tıkla onaylar.
+   - Tek tıklamayla bilet durumu `closed` (çözüldü) yapılır, müşteriye yanıt kaydedilir ve işlem süresi 15 dakikadan 3 saniyeye iner.
 
 ---
 
@@ -60,10 +60,10 @@ OmniResolve, Zendesk'in yüzlerce karmaşık menüsü yerine destek operasyonlar
 
 | Süreç Adımı | Geleneksel SaaS (Zendesk) | OmniResolve (AI-Native) |
 | :--- | :--- | :--- |
-| **Bileti Okuma & Anlama** | Temsilci 3-5 dk uzun müşteri şikayetini okur. | Model anında özetler ve duygu/kategori tespit eder. |
-| **Sistem Aksiyonu Belirleme** | Temsilci ERP/Kargo/İade ekranını açıp kargo kodu üretir. | AI, kargo veya iade anlaşma kodunu arka planda üretir. |
+| **Bileti Okuma & Anlama** | Temsilci 3-5 dk uzun müşteri şikayetini okur. | Model anında özetler ve duygu/kategori/emniyet riskini tespit eder. |
+| **Sistem Aksiyonu Belirleme** | Temsilci telemetri/GPS sistemine girip rota ve gişe uyuşmazlığını arar. | AI, GPS sapmasını ve sürücü maskeli arama protokolünü otomatik hazırlar. |
 | **Yanıt Yazma** | Şablon arar veya sıfırdan e-posta yazar (~6 dk). | Profesyonel, kişiselleştirilmiş yanıt taslağı hazır gelir. |
-| **Bileti Kapatma** | Durumu elle "Solved" yapar, etiket ekler (~2 dk). | **Tek tıkla "Pası Gole Çevir" butonuyla tüm işlem 3 sn'de biter.** |
+| **Bileti Kapatma & Sevk** | Durumu elle "Solved" yapar, birimlere elle mail atar (~2 dk). | **Tek tıkla "Pası Gole Çevir" aksiyonuyla tüm sevk ve yanıt 3 sn'de biter.** |
 | **Toplam Temsilci Süresi** | **~12 – 15 Dakika** | **~3 – 5 Saniye (%96 Zaman Tasarrufu)** |
 
 ---
@@ -77,7 +77,7 @@ OmniResolve, Zendesk'in yüzlerce karmaşık menüsü yerine destek operasyonlar
 | **Toplam Token Maliyeti ($)** | **$48.50** | Geliştirme, mimari tasarım, prompt testleri ve canlı inference maliyeti. |
 | **Toplam Çalışma Süresi (Saat)** | **14.5 Saat** | Konseptten canlı URL'ye uçtan uca teslimat süresi. |
 | **Satır Sayısı (LOC)** | **~1.380 Satır** | Frontend (TypeScript/React): 620 LOC, Backend (Ruby/Rails): 760 LOC. |
-| **Kullanılan Model(ler)** | **GPT-4o-mini**, **Gemini 2.5 Flash**, **Claude 3.5 Sonnet** | Kod üretimi, mimari doğrulama ve API içi NLP çıkarımı için kullanıldı. |
+| **Kullanılan Model(ler)** | **Google Gemini 3.8 Flash**, **GPT-4o-mini**, **Claude 3.5 Sonnet** | Kod üretimi, mimari doğrulama ve API içi canlı NLP çıkarımı için kullanıldı. |
 | **Kullanılan Coding Agent(lar)** | **Antigravity IDE** | Pair-programming, terminal orkestrasyonu ve deploy yönetimi. |
 | **Agent Oturum Sayısı** | **4 Oturum** | Mimari kurulum, Rails API, Next.js arayüz ve deploy/optimizasyon. |
 | **Üretim Maliyet Verimliliği** | **%99.98 Tasarruf** | $4.1M'lık Zendesk yıllık faturasına karşılık < $100 üretim maliyeti. |
