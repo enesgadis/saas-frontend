@@ -100,6 +100,6 @@ OmniResolve, Zendesk'in yüzlerce karmaşık menüsü yerine destek operasyonlar
 
 ## 6. Mimari ve Güvenlik Uyumluluğu
 
-* **API Anahtarı İzolasyonu:** `OPENAI_API_KEY` asla tarayıcıya (frontend) gitmez; yalnızca Rails API üzerinde (`app/services/ticket_analyzer_service.rb`) saklanır ve işlenir.
+* **API Anahtarı İzolasyonu:** `GEMINI_API_KEY` ve `OPENAI_API_KEY` asla tarayıcıya (frontend) gitmez; yalnızca Rails API üzerinde (`app/services/ticket_analyzer_service.rb`) güvenle saklanır ve işlenir.
 * **Fail-Safe Smart Heuristics:** Model kotası veya ağ kesintisi durumunda dahi sistem "Akıllı Analiz Motoru" ile kesintisiz olarak bilet türünü ve aksiyonunu öngörür.
 * **Etik Uyumluluk:** Orijinal Zendesk logosu, rengi veya kapalı kaynak kodu kullanılmamış; sentetik verilerle özgün "OmniResolve" markası altında geliştirilmiştir.
