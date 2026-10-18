@@ -211,9 +211,28 @@ export default function CustomerPortal() {
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-xs font-medium text-slate-300 mb-1.5">
-                Mesajınız / Talebinizin Detayları <span className="text-red-400">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label htmlFor="description" className="block text-xs font-medium text-slate-300">
+                  Mesajınız / Talebinizin Detayları <span className="text-red-400">*</span>
+                </label>
+                {description.trim().length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+                        window.speechSynthesis.cancel();
+                        const u = new SpeechSynthesisUtterance(description);
+                        u.lang = "tr-TR";
+                        window.speechSynthesis.speak(u);
+                      }
+                    }}
+                    className="text-[11px] text-blue-400 hover:text-blue-300 flex items-center space-x-1"
+                    title="Yazdığınız metni dinleyin"
+                  >
+                    <span>🔊 Metni Dinle</span>
+                  </button>
+                )}
+              </div>
               <textarea
                 id="description"
                 required
