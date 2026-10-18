@@ -6,36 +6,36 @@ import { createTicket } from "@/lib/api";
 
 const COMMON_TOPICS = [
   {
-    icon: "📦",
-    label: "Kargo Gecikmesi",
-    customer_name: "Ahmet Yılmaz",
-    customer_email: "ahmet.yilmaz@sirket.com",
-    title: "Siparişim 5 gündür kargoya verilmedi",
-    description: "Geçen hafta verdiğim sipariş sisteminizde hala 'hazırlanıyor' olarak görünüyor. Acil kargo takip numaramın paylaşılmasını ve sevkiyatın hızlandırılmasını talep ediyorum."
+    icon: "🎒",
+    label: "Araçta Eşya Unutuldu",
+    customer_name: "Caner Yılmaz",
+    customer_email: "caner.yilmaz@email.com",
+    title: "Yolculukta arka koltukta deri sırt çantam kaldı (#UB-89214)",
+    description: "Dün gece 23:45'te Beşiktaş - Kadıköy yolculuğumu tamamladım. 34 TFM 42 plakalı aracın arka koltuğunda siyah deri sırt çantamı unuttum. İçinde iş bilgisayarım var, sürücüye ulaşamıyorum acil destek rica ederim."
   },
   {
     icon: "💳",
-    label: "Arızalı Ürün & İade",
-    customer_name: "Zeynep Kaya",
-    customer_email: "zeynep.kaya@kurumsal.com",
-    title: "Ürün hasarlı teslim edildi, iade talebi",
-    description: "Bugün teslim aldığım cihazın ekranında çatlak ve fiziksel hasar mevcut. Ürünün iadesi için kargo anlaşma kodunun tarafıma iletilmesini ve tutarın kartıma iadesini rica ederim."
+    label: "Fazla Ücret & Rota",
+    customer_name: "Selin Demir",
+    customer_email: "selin.demir@kurumsal.com",
+    title: "Sürücü rotayı uzattı, hesabımdan 2 kat fazla ücret çekildi",
+    description: "Havalimanı transferimde sürücü navigasyon dışına çıkarak köprü geçişini mükerrer yansıtmış. Tahmini 450 TL olan tutar hesabımdan 920 TL olarak çekildi. GPS telemetrisinin incelenerek fazla çekilen tutarın iadesini talep ediyorum."
   },
   {
-    icon: "🔑",
-    label: "Hesap & Erişim",
-    customer_name: "Mehmet Demir",
-    customer_email: "mehmet.demir@firma.com",
-    title: "Kurumsal hesaba giriş yapılamıyor",
-    description: "Şifremi sıfırlamak istediğimde tek kullanımlık doğrulama bağlantısı e-posta kutuma ulaşmıyor. Hesabıma acil erişim sağlamam gerekiyor."
+    icon: "🍔",
+    label: "Uber Eats: Eksik Sipariş",
+    customer_name: "Mert Karaca",
+    customer_email: "mert.karaca@gmail.com",
+    title: "Restoran siparişimde 2 ana yemek poşetten çıkmadı (#EATS-44129)",
+    description: "Siparişim geldiğinde kurye poşetinin güvenlik bandı yırtıktı. Faturada yer alan 2 adet menü pakette yoktu. Kurye restorana sormamı söyledi. Eksik ürünlerin tutarının Uber Eats cüzdanıma iadesini talep ediyorum."
   },
   {
-    icon: "🧾",
-    label: "Fatura & Muhasebe",
-    customer_name: "Canan Şahin",
-    customer_email: "canan.sahin@holding.com",
-    title: "Kredi kartından mükerrer tahsilat",
-    description: "Aylık lisans yenilemesinde kurumsal kartımızdan aynı tutar 2 defa tahsil edilmiştir. Fazla çekilen bedelin iadesi ve muhasebe dekontunun tarafımıza gönderilmesini rica ederiz."
+    icon: "🛡️",
+    label: "Güvenlik & Kural İhlali",
+    customer_name: "Büşra Aydın",
+    customer_email: "busra.aydin@domain.com",
+    title: "Sürücü yolculuk boyunca agresif araç kullandı ve kural ihlali yaptı",
+    description: "Seyir halindeyken sürücü telefonla video izledi ve emniyet şeridine girdi. Kendisini uyardığımda sözlü münakaşa yaşadık. Yolcu güvenliğini tehlikeye atan bu sürücünün profilinin incelenmesini ve hesabının kontrol edilmesini rica ediyorum."
   }
 ];
 

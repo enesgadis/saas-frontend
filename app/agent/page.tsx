@@ -190,7 +190,7 @@ export default function AgentDashboard() {
       setDepartment(updated.department || "");
       setTimeSaved(updated.time_saved_minutes || 18);
       setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-      setFeedback("✓ Google Gemini 3.5 Flash talebi okudu, ilgili birimi sevk etti ve yanıt hazırladı.");
+      setFeedback("✓ Google Gemini 3.8 Flash talebi anladı, ilgili Uber birimine sevk etti ve yanıtı hazırladı.");
     } catch {
       setFeedback("Yapay zekâ analizi sırasında bağlantı hatası oluştu.");
     } finally {
@@ -204,16 +204,17 @@ export default function AgentDashboard() {
     let category = { label: "Genel Destek", icon: "💬", color: "text-slate-400 bg-slate-800/40 border-slate-700/50" };
     let priority = { label: "Normal", color: "text-blue-400 bg-blue-950/40 border-blue-800/40" };
 
-    if (text.includes("iade") || text.includes("arıza") || text.includes("bozuk") || text.includes("para") || text.includes("hasarlı")) {
-      category = { label: "İade & Değişim", icon: "💳", color: "text-amber-400 bg-amber-950/40 border-amber-800/40" };
+    if (text.includes("çanta") || text.includes("eşya") || text.includes("unuttum") || text.includes("kayıp") || text.includes("cüzdan") || text.includes("telefon")) {
+      category = { label: "Kayıp Eşya & Sürücü", icon: "🎒", color: "text-amber-400 bg-amber-950/40 border-amber-800/40" };
       priority = { label: "Yüksek", color: "text-orange-400 bg-orange-950/40 border-orange-800/40" };
-    } else if (text.includes("kargo") || text.includes("teslim") || text.includes("gecik") || text.includes("nerede") || text.includes("sevkiyat")) {
-      category = { label: "Lojistik & Teslimat", icon: "📦", color: "text-cyan-400 bg-cyan-950/40 border-cyan-800/40" };
+    } else if (text.includes("ücret") || text.includes("rota") || text.includes("köprü") || text.includes("fazla") || text.includes("gişe") || text.includes("tahsilat")) {
+      category = { label: "Ücret & Rota İtirazı", icon: "💳", color: "text-cyan-400 bg-cyan-950/40 border-cyan-800/40" };
       priority = { label: "Acil", color: "text-red-400 bg-red-950/40 border-red-800/40" };
-    } else if (text.includes("şifre") || text.includes("giriş") || text.includes("hesap") || text.includes("erişim")) {
-      category = { label: "Güvenlik & Hesap", icon: "🔑", color: "text-purple-400 bg-purple-950/40 border-purple-800/40" };
-    } else if (text.includes("fatura") || text.includes("tahsilat") || text.includes("ödeme") || text.includes("çekim")) {
-      category = { label: "Fatura & Muhasebe", icon: "🧾", color: "text-emerald-400 bg-emerald-950/40 border-emerald-800/40" };
+    } else if (text.includes("güvenlik") || text.includes("tehlike") || text.includes("agresif") || text.includes("kural") || text.includes("emniyet")) {
+      category = { label: "Sürüş Emniyeti (Safety)", icon: "🛡️", color: "text-rose-400 bg-rose-950/40 border-rose-800/40" };
+      priority = { label: "Kritik", color: "text-rose-400 bg-rose-950/40 border-rose-800/40" };
+    } else if (text.includes("eats") || text.includes("yemek") || text.includes("sipariş") || text.includes("kurye") || text.includes("restoran")) {
+      category = { label: "Uber Eats Restoran", icon: "🍔", color: "text-emerald-400 bg-emerald-950/40 border-emerald-800/40" };
     }
 
     return { category, priority };
