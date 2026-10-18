@@ -618,7 +618,7 @@ export default function AgentDashboard() {
                 <div className="flex items-center space-x-2">
                   <span className="text-[11px] font-mono px-2.5 py-1 rounded-md bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 flex items-center space-x-1.5 shadow-sm">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span>Canlı LLM: Google Gemini 3.5 Flash</span>
+                    <span>Canlı LLM: Google Gemini 3.8 Flash</span>
                   </span>
                   <button
                     type="button"
@@ -783,13 +783,19 @@ export default function AgentDashboard() {
                 </div>
 
                 <span className="text-[11px] text-slate-400">
-                  Google Gemini 3.5 Flash ile orkestre edilmektedir.
+                  Google Gemini 3.8 Flash ile orkestre edilmektedir.
                 </span>
               </div>
 
               {feedback && (
-                <div className="mt-3.5 p-3 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-medium flex items-center space-x-2 shadow-sm">
-                  <span>✓</span>
+                <div
+                  className={`mt-3.5 p-3 rounded-lg border text-xs font-medium flex items-center space-x-2 shadow-sm ${
+                    feedback.includes("hata") || feedback.includes("başarısız")
+                      ? "bg-rose-950/70 border-rose-500/50 text-rose-300"
+                      : "bg-emerald-950/60 border-emerald-500/40 text-emerald-300"
+                  }`}
+                >
+                  <span>{feedback.includes("hata") ? "⚠️" : "✓"}</span>
                   <span>{feedback}</span>
                 </div>
               )}
